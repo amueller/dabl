@@ -31,6 +31,7 @@ from warnings import warn
 def plot_regression_continuous(X, target_col, types=None,
                                scatter_alpha='auto', scatter_size='auto',
                                drop_outliers=True, correlation="spearman",
+                               prune_correlations=True,
                                **kwargs):
     """Plots for continuous features in regression.
 
@@ -56,6 +57,8 @@ def plot_regression_continuous(X, target_col, types=None,
         Correlation to use for ranking plots, passed to
         ``pd.DataFrame.corrwith``.
         Valid values are `'pearson'`, `'kendall'`, `'spearman'`.
+    prune_correlations : bool, default=True
+        Whether to prune highly correlated features from the plot.
 
     """
     types = _check_X_target_col(X, target_col, types, task="regression")
@@ -80,7 +83,20 @@ def plot_regression_continuous(X, target_col, types=None,
     target = X[target_col]
 
     correlations = features.corrwith(target, method=correlation)
-    top_k = correlations.abs().sort_values().dropna().index[-show_top:][::-1]
+    correlations.abs().sort_values().dropna().index[::-1]
+    if prune_correlations:
+        top_k = []
+        for col in correlations.abs().sort_values().dropna()[::-1].index:
+            corr = features[top_k].corrwith(features[col], method="spearman")
+            corr = corr.abs()
+            if not len(top_k) or corr.max() < .9:
+                top_k.append(col)
+            else:
+                warn(f"Not plotting highly correlated feature {col}")
+            if len(top_k) == show_top:
+                break
+    else:
+        top_k = correlations.abs().sort_values().dropna()[::-1][:show_top]
     fig, axes = _make_subplots(n_plots=show_top)
 
     # FIXME this could be a function or maybe using seaborn
