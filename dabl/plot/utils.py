@@ -390,27 +390,48 @@ def _short_tick_names(ax, label_length=20, ticklabel_length=10):
     ax.set_ylabel(_shortname(ax.get_ylabel(), maxlen=label_length))
 
 
+def _score_triple(X, cont1, cont2, cat, random_state):
+    # score how well you can predict a category from two continuous features
+    # assume this tree is simple enough so not be able to overfit in 2d
+    # so we don't bother with train/test split
+    if hasattr(X, "loc"):
+        # we passed column names in a pandas dataframe
+        this_X = X.loc[:, [cont1, cont2]]
+        target = X.loc[:, cat].cat.codes
+    else:
+        # we passed indices into a numpy array,
+        # cat is an integer array
+        this_X = X[:, [cont1, cont2]]
+        target = cat
+    # limit to 2000 training points for speed?
+    train_size = min(2000, int(.9 * this_X.shape[0]))
+    cv = StratifiedShuffleSplit(n_splits=3, train_size=train_size,
+                                random_state=random_state)
+    tree = DecisionTreeClassifier(max_leaf_nodes=8)
+    return np.mean(cross_val_score(
+        tree, this_X, target, cv=cv, scoring='recall_macro'))
+
+
+def _find_categorical_for_regression(
+        X, types, target_col, top_cont, random_state=None):
+    categorical_features = X.columns[types == 'categorical']
+    scores = [(cont, cat, _score_triple(
+                X, target_col, cont, cat, random_state=random_state))
+              for cont, cat in itertools.product(
+                top_cont, categorical_features)]
+    scores = pd.DataFrame(scores, colums=['cont', 'cat', 'score'])
+    best_categorical = scores.pivot(index='cat', columns='cont', values='score').idxmax()
+    return best_categorical
+
+
 def _find_scatter_plots_classification(X, target, how_many=3,
                                        random_state=None):
     # input is continuous
     # look at all pairs of features, find most promising ones
-    # dummy = DummyClassifier(strategy='prior').fit(X, target)
-    # baseline_score = recall_score(target, dummy.predict(X), average='macro')
-    scores = []
     # converting to int here might save some time
     _, target = np.unique(target, return_inverse=True)
-    # limit to 2000 training points for speed?
-    train_size = min(2000, int(.9 * X.shape[0]))
-    cv = StratifiedShuffleSplit(n_splits=3, train_size=train_size,
-                                random_state=random_state)
-    for i, j in itertools.combinations(np.arange(X.shape[1]), 2):
-        this_X = X[:, [i, j]]
-        # assume this tree is simple enough so not be able to overfit in 2d
-        # so we don't bother with train/test split
-        tree = DecisionTreeClassifier(max_leaf_nodes=8)
-        scores.append((i, j, np.mean(cross_val_score(
-            tree, this_X, target, cv=cv, scoring='recall_macro'))))
-
+    scores = [(i, j, _score_triple(X, i, j, target, random_state=random_state))
+              for i, j in itertools.combinations(np.arange(X.shape[1]), 2)]
     scores = pd.DataFrame(scores, columns=['feature0', 'feature1', 'score'])
     top = scores.sort_values(by='score').iloc[-how_many:][::-1]
     return top

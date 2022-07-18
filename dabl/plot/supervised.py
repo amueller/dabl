@@ -31,7 +31,7 @@ from warnings import warn
 def plot_regression_continuous(X, target_col, types=None,
                                scatter_alpha='auto', scatter_size='auto',
                                drop_outliers=True, correlation="spearman",
-                               prune_correlations=True,
+                               prune_correlations_threshold=0.95,
                                **kwargs):
     """Plots for continuous features in regression.
 
@@ -57,8 +57,9 @@ def plot_regression_continuous(X, target_col, types=None,
         Correlation to use for ranking plots, passed to
         ``pd.DataFrame.corrwith``.
         Valid values are `'pearson'`, `'kendall'`, `'spearman'`.
-    prune_correlations : bool, default=True
+    prune_correlations_threshold : float, default=.95
         Whether to prune highly correlated features from the plot.
+        Set to 0 to disable pruning.
 
     """
     types = _check_X_target_col(X, target_col, types, task="regression")
@@ -83,21 +84,22 @@ def plot_regression_continuous(X, target_col, types=None,
     target = X[target_col]
 
     correlations = features.corrwith(target, method=correlation)
-    correlations.abs().sort_values().dropna().index[::-1]
-    if prune_correlations:
+    corrs = correlations.abs().sort_values().dropna().index[::-1]
+    if prune_correlations_threshold > 0:
         top_k = []
-        for col in correlations.abs().sort_values().dropna()[::-1].index:
+        for col in corrs:
             corr = features[top_k].corrwith(features[col], method="spearman")
             corr = corr.abs()
-            if not len(top_k) or corr.max() < .9:
+            if not len(top_k) or corr.max() < prune_correlations_threshold:
                 top_k.append(col)
             else:
-                warn(f"Not plotting highly correlated feature {col}")
+                warn(f"Not plotting highly correlated ({corr.max()})"
+                     f" feature {col}")
             if len(top_k) == show_top:
                 break
     else:
-        top_k = correlations.abs().sort_values().dropna()[::-1][:show_top]
-    fig, axes = _make_subplots(n_plots=show_top)
+        top_k = corrs[:show_top]
+    fig, axes = _make_subplots(n_plots=len(top_k))
 
     # FIXME this could be a function or maybe using seaborn
     plt.suptitle("Continuous Feature vs Target")
