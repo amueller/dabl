@@ -22,7 +22,8 @@ from .utils import (_check_X_target_col, _get_n_top, _make_subplots,
                     find_pretty_grid, _find_scatter_plots_classification,
                     class_hists, discrete_scatter, mosaic_plot,
                     _find_inliers, pairplot, _get_scatter_alpha,
-                    _get_scatter_size)
+                    _get_scatter_size, _find_categorical_for_regression,
+                    _prune_categories)
 from .sankey import plot_sankey
 
 from warnings import warn
@@ -79,8 +80,6 @@ def plot_regression_continuous(X, target_col, types=None,
     if features.shape[1] == 0:
         return
 
-    show_top = _get_n_top(features, "continuous")
-
     target = X[target_col]
 
     correlations = features.corrwith(target, method=correlation)
@@ -95,10 +94,23 @@ def plot_regression_continuous(X, target_col, types=None,
             else:
                 warn(f"Not plotting highly correlated ({corr.max()})"
                      f" feature {col}")
-            if len(top_k) == show_top:
+            if len(top_k) > 20:
+                warn("Showing only top 10 continuous features.")
+                top_k = top_k[:10]
                 break
+
     else:
+        show_top = _get_n_top(features, "continuous")
+
         top_k = corrs[:show_top]
+
+    X = X.copy()
+    for cat_col in X.columns[types.categorical]:
+        X[cat_col] = _prune_categories(X[cat_col])
+
+    best_categorical = _find_categorical_for_regression(
+        X, types, target_col, top_cont=top_k, random_state=None)
+
     fig, axes = _make_subplots(n_plots=len(top_k))
 
     # FIXME this could be a function or maybe using seaborn
@@ -108,13 +120,11 @@ def plot_regression_continuous(X, target_col, types=None,
     for i, (col, ax) in enumerate(zip(top_k, axes.ravel())):
         if i % axes.shape[1] == 0:
             ax.set_ylabel(_shortname(target_col))
-        if drop_outliers:
-            inliers = _find_inliers(features.loc[:, col])
-            ax.scatter(features.loc[inliers, col], target[inliers],
-                       alpha=scatter_alpha, s=scatter_size)
-        else:
-            ax.scatter(features.loc[:, col], target,
-                       alpha=scatter_alpha, s=scatter_size)
+        # fixme need to prune categories in categorical variable
+        discrete_scatter(features.loc[:, col], target,
+                         X.loc[:, best_categorical[col]],
+                         clip_outliers=drop_outliers, alpha=scatter_alpha,
+                         s=scatter_size, ax=ax, legend=True)
         ax.set_xlabel(_shortname(col, maxlen=50))
         ax.set_title("F={:.2E}".format(correlations[col]))
 

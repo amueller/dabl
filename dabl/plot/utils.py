@@ -396,6 +396,7 @@ def _score_triple(X, cont1, cont2, cat, random_state):
     # so we don't bother with train/test split
     if hasattr(X, "loc"):
         # we passed column names in a pandas dataframe
+        X = X.dropna(subset=[cont1, cont2, cat])
         this_X = X.loc[:, [cont1, cont2]]
         target = X.loc[:, cat].cat.codes
     else:
@@ -414,13 +415,14 @@ def _score_triple(X, cont1, cont2, cat, random_state):
 
 def _find_categorical_for_regression(
         X, types, target_col, top_cont, random_state=None):
-    categorical_features = X.columns[types == 'categorical']
+    categorical_features = X.columns[types.categorical]
     scores = [(cont, cat, _score_triple(
                 X, target_col, cont, cat, random_state=random_state))
               for cont, cat in itertools.product(
                 top_cont, categorical_features)]
-    scores = pd.DataFrame(scores, colums=['cont', 'cat', 'score'])
-    best_categorical = scores.pivot(index='cat', columns='cont', values='score').idxmax()
+    scores = pd.DataFrame(scores, columns=['cont', 'cat', 'score'])
+    best_categorical = scores.pivot(
+        index='cat', columns='cont', values='score').idxmax()
     return best_categorical
 
 
