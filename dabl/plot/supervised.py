@@ -121,8 +121,9 @@ def plot_regression_continuous(X, target_col, types=None,
         if i % axes.shape[1] == 0:
             ax.set_ylabel(_shortname(target_col))
         # fixme need to prune categories in categorical variable
+        c = X.loc[:, best_categorical[col]] if len(best_categorical) else None
         discrete_scatter(features.loc[:, col], target,
-                         X.loc[:, best_categorical[col]],
+                         c=c,
                          clip_outliers=drop_outliers, alpha=scatter_alpha,
                          s=scatter_size, ax=ax, legend=True)
         ax.set_xlabel(_shortname(col, maxlen=50))
