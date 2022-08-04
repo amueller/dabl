@@ -221,7 +221,7 @@ _DATE_TYPES = ['datetime64', 'datetime', 'date',
 _OBJECT_TYPES = ['string', 'bytes', 'mixed', 'mixed-integer']
 _CATEGORICAL_TYPES = ['categorical', 'boolean']
 
-USELESS_TYPES = {'missing', 'unique', 'constant', 'near_constant', 'index'}
+USELESS_TYPES = {'missing', 'unique', 'constant', 'near_constant', 'index', 'mixed-unhashable'}
 
 
 def _get_max_cat_cardinality(n_samples, max_cat_cardinality="auto"):
@@ -282,7 +282,14 @@ def _type_detection_object(series, *, dirty_float_threshold,
 def detect_type_series(series, *, dirty_float_threshold=0.9,
                        max_cat_cardinality='auto',
                        near_constant_threshold=0.95, target_col=None):
-    n_distinct_values = series.nunique()
+    try:
+        n_distinct_values = series.nunique()
+    except TypeError as e:
+        types = series.map(lambda x: type(x).__name__)
+        if len(types) == 1:
+            return types.iloc[0]
+        else:
+            return 'mixed-unhashable'
     if series.isna().mean() > 0.99:
         return "missing"
     # infer near-constant-values
@@ -393,7 +400,7 @@ def detect_types(X, type_hints=None, max_cat_cardinality='auto',
             types_series[t] = type_hints[t]
 
     known_types = ['continuous', 'dirty_float', 'low_card_int', 'categorical',
-                   'date', 'free_string', 'useless']
+                   'date', 'free_string', 'useless', 'list', 'dict']
     if X.empty:
         return pd.DataFrame(columns=known_types, dtype=bool)
     res = pd.DataFrame({t: types_series == t for t in known_types})

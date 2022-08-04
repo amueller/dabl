@@ -497,6 +497,8 @@ def discrete_scatter(x, y, c, unique_c=None, legend='first',
         legend = (ax.get_subplotspec().get_geometry()[2] == 1)
     if unique_c is None:
         unique_c = c.cat.categories if c is not None else []
+    if len(unique_c) == 0:
+        ax.scatter(x, y, s=s, alpha=alpha, **kwargs)
     for i in unique_c:
         mask = c == i
         ax.scatter(x[mask], y[mask], label=i, s=s, alpha=alpha, **kwargs)

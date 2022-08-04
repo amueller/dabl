@@ -108,8 +108,11 @@ def plot_regression_continuous(X, *, target_col, types=None,
     for cat_col in X.columns[types.categorical]:
         X[cat_col] = _prune_categories(X[cat_col])
 
-    best_categorical = _find_categorical_for_regression(
-        X, types, target_col, top_cont=top_k, random_state=None)
+    if kwargs.pop("find_scatter_categoricals", False):
+        best_categorical = _find_categorical_for_regression(
+            X, types, target_col, top_cont=top_k, random_state=None)
+    else:
+        best_categorical = []
 
     fig, axes = _make_subplots(n_plots=len(top_k))
 
