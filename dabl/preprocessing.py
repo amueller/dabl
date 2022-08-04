@@ -285,9 +285,9 @@ def detect_type_series(series, *, dirty_float_threshold=0.9,
     try:
         n_distinct_values = series.nunique()
     except TypeError as e:
-        types = series.map(lambda x: type(x).__name__)
+        types = series.dropna().map(lambda x: type(x).__name__).unique()
         if len(types) == 1:
-            return types.iloc[0]
+            return types[0]
         else:
             return 'mixed-unhashable'
     if series.isna().mean() > 0.99:

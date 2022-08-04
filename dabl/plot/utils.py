@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Patch
 from seaborn.utils import despine
-
+from scipy.stats import boxcox
 
 # from sklearn.dummy import DummyClassifier
 # from sklearn.metrics import recall_score
@@ -404,6 +404,13 @@ def _score_triple(X, cont1, cont2, cat, random_state):
         # cat is an integer array
         this_X = X[:, [cont1, cont2]]
         target = cat
+    target = _prune_categories(target)
+    category_counts = target.value_counts() / len(target)
+    uncommon_categories = category_counts.index[category_counts <= .1]
+    if len(uncommon_categories):
+        mask = target.isin(uncommon_categories)
+        target = target[~mask]
+        this_X = this_X[~mask]
     # limit to 2000 training points for speed?
     train_size = min(2000, int(.9 * this_X.shape[0]))
     cv = StratifiedShuffleSplit(n_splits=3, train_size=train_size,
@@ -489,6 +496,29 @@ def discrete_scatter(x, y, c, unique_c=None, legend='first',
     ...    alpha=0.3
     ... )
     """
+    def get_auto_log(series):
+        if series.min() < 0:
+            return False
+        elif series.min() == 0:
+            _, lmbd = boxcox(series + 1e-5)
+        else:
+            _, lmbd = boxcox(series)
+        if np.abs(lmbd - 1) > .5:
+            return True
+        return False
+
+    if clip_outliers:
+        x_low, x_high = _inlier_range(x)
+        y_low, y_high = _inlier_range(y)
+        x = x.clip(x_low, x_high)
+        y = y.clip(y_low, y_high)
+
+    logx = kwargs.pop("logx", False)
+    logy = kwargs.pop("logy", False)
+    if kwargs.pop("auto_log", False):
+        logx = get_auto_log(x)
+        logy = get_auto_log(y)
+
     alpha = _get_scatter_alpha(alpha, x)
     s = _get_scatter_size(s, x)
     if ax is None:
@@ -502,13 +532,17 @@ def discrete_scatter(x, y, c, unique_c=None, legend='first',
     for i in unique_c:
         mask = c == i
         ax.scatter(x[mask], y[mask], label=i, s=s, alpha=alpha, **kwargs)
-    if clip_outliers:
-        x_low, x_high = _inlier_range(x)
-        y_low, y_high = _inlier_range(y)
-        xlims = ax.get_xlim()
-        ylims = ax.get_ylim()
-        ax.set_xlim(max(x_low, xlims[0]), min(x_high, xlims[1]))
-        ax.set_ylim(max(y_low, ylims[0]), min(y_high, ylims[1]))
+    # if clip_outliers:
+    #     # FIXME do I still need this?
+    #     xlims = ax.get_xlim()
+    #     ylims = ax.get_ylim()
+    #     ax.set_xlim(max(x_low, xlims[0]), min(x_high, xlims[1]))
+    #     ax.set_ylim(max(y_low, ylims[0]), min(y_high, ylims[1]))
+
+    if logx:
+        ax.set_xscale("log")
+    if logy:
+        ax.set_yscale("log")
 
     if legend:
         props = {}

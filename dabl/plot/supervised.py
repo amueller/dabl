@@ -128,7 +128,7 @@ def plot_regression_continuous(X, *, target_col, types=None,
         discrete_scatter(features.loc[:, col], target,
                          c=c,
                          clip_outliers=drop_outliers, alpha=scatter_alpha,
-                         s=scatter_size, ax=ax, legend=True)
+                         s=scatter_size, ax=ax, legend=True, **kwargs)
         ax.set_xlabel(_shortname(col, maxlen=50))
         ax.set_title("F={:.2E}".format(correlations[col]))
 
