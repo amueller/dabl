@@ -33,7 +33,7 @@ jobs:
           conda list
       - name: Install scikit-learn
         run: |
-          python -c "from pip import pep425tags;print(pep425tags.supported_tags)"
+          python -c "import wheel.pep425tags as w; print('\n'.join(['-'.join(p) for p in w.get_supported()]))"
           if [[ "$SKLEARN_VERSION" == "dev" ]]; then
             pip install --pre --extra-index https://pypi.anaconda.org/scipy-wheels-nightly/simple scikit-learn
           else
