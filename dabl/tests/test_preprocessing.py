@@ -456,7 +456,7 @@ def test_simple_preprocessor_imputed_features():
     ep = EasyPreprocessor(types=types)
     ep.fit(data)
 
-    expected_names = ['A_0', 'A_1', 'A_2', 'A_imputed_False', 'A_imputed_True']
+    expected_names = ['A_0.0', 'A_1.0', 'A_2.0', 'missingindicator_A_1.0']
     assert (ep.get_feature_names_out() == expected_names).all()
 
 
