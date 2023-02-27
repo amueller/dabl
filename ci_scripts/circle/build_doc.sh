@@ -117,7 +117,7 @@ $MINICONDA_PATH/bin/conda create -n $CONDA_ENV_NAME --yes --quiet python="${PYTH
   scikit-image="${SCIKIT_IMAGE_VERSION:-*}" pandas="${PANDAS_VERSION:-*}" \
   joblib sphinx_rtd_theme seaborn numpydoc
 
-$MINICONDA_PATH/bin/conda activate testenv
+source activate testenv
 pip install sphinx-gallery sphinx_issues
 pip install scikit-learn --pre
 
