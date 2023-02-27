@@ -442,7 +442,7 @@ def test_easy_preprocessor_transform():
 def test_simple_preprocessor_imputed_features():
     # Issue: 211
 
-    data = pd.DataFrame({'A': [0, 1, 2, 1, np.NaN]}, dtype=int)
+    data = pd.DataFrame({'A': [0, 1, 2, 1, np.NaN]}, dtype="Int64")
     types = detect_types(data, type_hints={'A': 'categorical'})
 
     ep = EasyPreprocessor(types=types)
