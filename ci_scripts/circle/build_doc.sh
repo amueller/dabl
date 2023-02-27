@@ -107,17 +107,17 @@ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
 bash miniconda.sh -b -p $MINICONDA_PATH
 export PATH="$MINICONDA_PATH/bin:$PATH"
 hash -r
-conda update --yes --quiet conda
+$MINICONDA_PATH/bin/conda update --yes --quiet conda
 
 # Configure the conda environment and put it in the path using the
 # provided versions
-conda create -n $CONDA_ENV_NAME --yes --quiet python="${PYTHON_VERSION:-*}" \
+$MINICONDA_PATH/bin/conda create -n $CONDA_ENV_NAME --yes --quiet python="${PYTHON_VERSION:-*}" \
   numpy="${NUMPY_VERSION:-*}" scipy="${SCIPY_VERSION:-*}" cython \
   pytest coverage matplotlib="${MATPLOTLIB_VERSION:-*}" sphinx=2.* pillow \
   scikit-image="${SCIKIT_IMAGE_VERSION:-*}" pandas="${PANDAS_VERSION:-*}" \
   joblib sphinx_rtd_theme seaborn numpydoc
 
-source activate testenv
+$MINICONDA_PATH/bin/conda activate testenv
 pip install sphinx-gallery sphinx_issues
 pip install scikit-learn --pre
 
