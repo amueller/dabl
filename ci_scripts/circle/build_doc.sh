@@ -108,6 +108,8 @@ bash miniconda.sh -b -p $MINICONDA_PATH
 export PATH="$MINICONDA_PATH/bin:$PATH"
 hash -r
 $MINICONDA_PATH/bin/conda init bash
+cat  /home/circleci/.bashrc
+source /home/circleci/.bashrc
 $MINICONDA_PATH/bin/conda update --yes --quiet conda
 
 # Configure the conda environment and put it in the path using the
