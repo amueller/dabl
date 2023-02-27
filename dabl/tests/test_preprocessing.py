@@ -396,14 +396,22 @@ def test_titanic_feature_names():
                       'boat_13 15 B', 'boat_14', 'boat_15', 'boat_15 16', 'boat_16', 'boat_2', 'boat_3', 'boat_4',
                       'boat_5', 'boat_5 7', 'boat_5 9', 'boat_6', 'boat_7', 'boat_8', 'boat_8 10', 'boat_9', 'boat_?',
                       'boat_A', 'boat_B', 'boat_C', 'boat_C D', 'boat_D', 'age_?_0', 'age_?_1', 'body_?_0', 'body_?_1']
-    assert ep.get_feature_names_out() == expected_names
-
+    assert (ep.get_feature_names_out() == expected_names).all()
+    expected_names_no_clean = [
+        'sibsp', 'parch', 'pclass_1', 'pclass_2', 'pclass_3', 'sex_female',
+       'sex_male', 'embarked_?', 'embarked_C', 'embarked_Q', 'embarked_S',
+       'boat_1', 'boat_10', 'boat_11', 'boat_12', 'boat_13', 'boat_13 15',
+       'boat_13 15 B', 'boat_14', 'boat_15', 'boat_15 16', 'boat_16',
+       'boat_2', 'boat_3', 'boat_4', 'boat_5', 'boat_5 7', 'boat_5 9',
+       'boat_6', 'boat_7', 'boat_8', 'boat_8 10', 'boat_9', 'boat_?',
+       'boat_A', 'boat_B', 'boat_C', 'boat_C D', 'boat_D',
+       'age_dabl_continuous', 'fare_dabl_continuous',
+       'body_dabl_continuous', 'age_?', 'fare_?', 'body_?']
     # without clean
     X = ep.fit_transform(titanic.drop('survived', axis=1))
-    # FIXME can't do that yet
-    # assert ep.get_feature_names_out() == expected_names_no_clean
+    assert (ep.get_feature_names_out() == expected_names_no_clean).all()
 
-    assert not np.isnan(X).any()
+    assert not np.isnan(X).any().any()
 
 
 def test_type_detection_bytes():
@@ -449,7 +457,7 @@ def test_simple_preprocessor_imputed_features():
     ep.fit(data)
 
     expected_names = ['A_0', 'A_1', 'A_2', 'A_imputed_False', 'A_imputed_True']
-    assert ep.get_feature_names_out() == expected_names
+    assert (ep.get_feature_names_out() == expected_names).all()
 
 
 def test_dirty_float_target_regression():

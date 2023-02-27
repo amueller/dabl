@@ -600,11 +600,12 @@ class EasyPreprocessor(BaseEstimator, TransformerMixin):
         if (self.force_imputation
                 or X.loc[:, types.categorical].isna().any(axis=None)):
             steps_categorical.append(
-                SimpleImputer(strategy='most_frequent', add_indicator=True))
+                SimpleImputer(strategy='most_frequent', add_indicator=True)
+                )
         steps_categorical.append(
             OneHotEncoder(categories='auto', handle_unknown='ignore',
                           sparse=False))
-        pipe_categorical = make_pipeline(*steps_categorical)
+        pipe_categorical = make_pipeline(*steps_categorical).set_output(transform="pandas")
 
         steps_continuous = []
         if (self.force_imputation
@@ -617,14 +618,16 @@ class EasyPreprocessor(BaseEstimator, TransformerMixin):
             steps_continuous.append(StandardScaler())
         # if X.loc[:, types['continuous']].isnull().values.any():
         # FIXME doesn't work if missing values only in dirty column
-        pipe_continuous = make_pipeline(*steps_continuous)
+        pipe_continuous = make_pipeline(*steps_continuous).set_output(transform="pandas")
         # FIXME only have one imputer/standard scaler in all
         # (right now copied in dirty floats and floats)
 
         pipe_dirty_float = make_pipeline(
             DirtyFloatCleaner(),
             make_column_transformer(
-                (pipe_continuous, _select_cont), remainder="passthrough"))
+                (pipe_continuous, _select_cont), remainder="passthrough",
+                verbose_feature_names_out=False),
+                ).set_output(transform="pandas")
         # construct column transformer
         transformer_cols = []
         if types['continuous'].any():
@@ -640,8 +643,8 @@ class EasyPreprocessor(BaseEstimator, TransformerMixin):
 
         if not len(transformer_cols):
             raise ValueError("No feature columns found")
-        self.ct_ = ColumnTransformer(transformer_cols, sparse_threshold=.1)
-
+        self.ct_ = ColumnTransformer(transformer_cols, sparse_threshold=.1, verbose_feature_names_out=False)
+        self.ct_.set_output(transform="pandas")
         self.ct_.fit(X)
 
         self.input_shape_ = X.shape
@@ -650,39 +653,7 @@ class EasyPreprocessor(BaseEstimator, TransformerMixin):
         return self
 
     def get_feature_names_out(self):
-        # this can go soon hopefully
-        feature_names = []
-        for name, trans, cols in self.ct_.transformers_:
-            if name == "continuous":
-                # three should be no all-nan columns in the imputer
-                if (trans.steps[0][0] == "simpleimputer"
-                        and np.isnan(trans.steps[0][1].statistics_).any()):
-                    raise ValueError("So unexpected! Looks like the imputer"
-                                     " dropped some all-NaN columns."
-                                     "Try calling 'clean' on your data first.")
-                feature_names.extend(cols.index[cols])
-            elif name == 'categorical':
-                # this is the categorical pipe, extract one hot encoder
-                ohe = trans.steps[-1][1]
-                imputer = trans.steps[0][1]
-
-                ohe_cols = cols[cols].index
-                added_cols = ohe_cols[imputer.indicator_.features_].map(
-                    lambda x: '{}_imputed'.format(x))
-                ohe_cols = ohe_cols.to_list()
-                ohe_cols.extend(added_cols)
-
-                feature_names.extend(ohe.get_feature_names_out(ohe_cols))
-            elif name == "remainder":
-                assert trans == "drop"
-            elif name == "dirty_float":
-                raise ValueError(
-                    "Can't compute feature names when handling dirty floats. "
-                    "Call 'clean' as a workaround")
-            else:
-                raise ValueError(
-                    "Can't compute feature names for {}".format(name))
-        return feature_names
+        return self.ct_.get_feature_names_out()
 
     def transform(self, X):
         """ A reference implementation of a transform function.
