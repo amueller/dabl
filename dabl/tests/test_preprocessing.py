@@ -106,9 +106,10 @@ def test_boolean_and_nan(null_object):
     X = pd.DataFrame({'a': [True, False, True, False, null_object]})
     types = detect_types(X)
     assert types.categorical.a
-
-    X_preprocessed = EasyPreprocessor().fit_transform(X)
-    assert X_preprocessed.shape[1] == 4
+    ep = EasyPreprocessor()
+    X_preprocessed = ep.fit_transform(X)
+    assert (ep.get_feature_names_out() == ['a_True', 'missingindicator_a_True']).all()
+    assert X_preprocessed.shape[1] == 2
     assert all(np.unique(X_preprocessed) == [0, 1])
 
 
@@ -306,8 +307,9 @@ def test_transform_dirty_float():
     res = dfc.transform(dirty)
     # TODO test for new values in test etc
     assert res.shape == (100, 3)
+    assert (res.columns == [
+        'a_column_garbage', 'a_column_missing', 'a_column_dabl_continuous']).all()
     assert res.a_column_missing.sum() == 9
-    assert res.a_column_garbage.sum() == 1
     assert (dfc.get_feature_names_out() == res.columns).all()
 
 

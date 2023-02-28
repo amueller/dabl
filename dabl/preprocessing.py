@@ -86,7 +86,7 @@ class DirtyFloatCleaner(BaseEstimator, TransformerMixin):
             floats, X_col = _float_matching_fetch(X, col, return_safe_col=True)
             # FIXME sparse
             if (~floats).any():
-                encoders[col] = OneHotEncoder(sparse_output=False, drop="if_binary",
+                encoders[col] = OneHotEncoder(sparse_output=False,
                                               handle_unknown='ignore').fit(
                     pd.DataFrame(X_col[~floats]))
             else:
