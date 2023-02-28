@@ -6,6 +6,7 @@ dabl 0.2.5
 - Improved plotting of low cardinality integers, :issue:`326` by :user:`amueller`.
 - Added engineering formatter to plots, :issue:`324` by :user:`stefmolin`.
 - Share x and y axes when appropriate, :issue:`323` by :user:`stefmolin`.
+- Raise scikit-learn version dependency to 1.2, and use the support for pandas dataframes for preprocessing and feature names, :issue:`328` by :user:`amueller`.
 
 dabl 0.2.4
 --------------
